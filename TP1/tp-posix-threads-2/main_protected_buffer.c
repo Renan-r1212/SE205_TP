@@ -107,6 +107,7 @@ void read_file(char * filename);
 int main(int argc, char *argv[]){
   int   i;
   int * data;
+  pthread_t tasksIndex[n_consumers + n_producers];
   pthread_t consumer[n_consumers];
   pthread_t producer[n_producers];
   
@@ -122,21 +123,21 @@ int main(int argc, char *argv[]){
 
 
   set_start_time();
-
+  printf("Asdasdasdasd");
   // Create consumers and then producers. Pass the *value* of i
   // as parametre of the main procedure (main_consumer or main_producer).
+  tasks = tasksIndex;
   for (i=0; i<n_consumers; i++) {
     data = malloc(sizeof(int));
-   *data = i; 
+   *data = i;
+    tasksIndex[i] = consumer[i]; 
     pthread_create(&consumer[i],NULL,main_consumer,data);
-    tasks[i] = consumer[i];
-
   }
   for (i=n_consumers; i<n_producers+n_consumers; i++) {
     data = malloc(sizeof(int));
    *data = i; 
+    tasksIndex[i] = producer[i];
     pthread_create(&producer[i],NULL,main_producer,data);
-    tasks[i] = producer[i];
   }
   
   // Wait for producers and consumers termination

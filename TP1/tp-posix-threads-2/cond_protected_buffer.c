@@ -12,6 +12,25 @@ protected_buffer_t * cond_protected_buffer_init(int length) {
   b = (protected_buffer_t *)malloc(sizeof(protected_buffer_t));
   b->buffer = circular_buffer_init(length);
   // Initialize the synchronization components
+
+  // pthread_mutex_init returns 0 if the orperation went well
+   b->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+  if(pthread_mutex_init(b->mutex,NULL) != 0){
+    perror("pthread_cond_init:");
+    exit(1);
+  }
+ 
+  b->conditionEmpty = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+  if(pthread_cond_init(b->conditionEmpty, NULL)){
+    perror("pthread_cond_init:");
+    exit(1);    
+  }
+
+    b->conditionNotEmpty = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+    if(pthread_cond_init(b->conditionNotEmpty, NULL)){
+    perror("pthread_cond_init:");
+    exit(1);    
+  }
   return b;
 }
 
@@ -22,16 +41,25 @@ void * cond_protected_buffer_get(protected_buffer_t * b){
   
   // Enter mutual exclusion
   
+  pthread_mutex_lock(b->mutex); 
+  
   // Wait until there is a full slot to get data from the unprotected
   // circular buffer (circular_buffer_get).
-  
+
+
+//  d = circular_buffer_get(b->buffer);
+  while(NULL == (d = circular_buffer_get(b->buffer))){
+    pthread_cond_wait(b->conditionEmpty, b->mutex);
+
+  }
   // Signal or broadcast that an empty slot is available in the
   // unprotected circular buffer (if needed)
+  pthread_cond_broadcast(b->conditionNotEmpty);
 
-  d = circular_buffer_get(b->buffer);
   print_task_activity ("get", d);
 
   // Leave mutual exclusion
+  pthread_mutex_unlock(b->mutex); 
   
   return d;
 }
@@ -41,17 +69,23 @@ void * cond_protected_buffer_get(protected_buffer_t * b){
 void cond_protected_buffer_put(protected_buffer_t * b, void * d){
 
   // Enter mutual exclusion
+  pthread_mutex_lock(b->mutex); 
   
   // Wait until there is an empty slot to put data in the unprotected
   // circular buffer (circular_buffer_put).
   
+  while(!circular_buffer_put(b->buffer,d)){
+    pthread_cond_wait(b->conditionNotEmpty, b->mutex);
+  }
+  
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
+  pthread_cond_broadcast(b->conditionEmpty);
 
-  circular_buffer_put(b->buffer, d);
   print_task_activity ("put", d);
 
   // Leave mutual exclusion
+  pthread_mutex_unlock(b->mutex); 
 }
 
 // Extract an element from buffer. If the attempted operation is not

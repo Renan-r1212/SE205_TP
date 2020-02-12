@@ -123,7 +123,6 @@ int main(int argc, char *argv[]){
 
 
   set_start_time();
-  printf("Asdasdasdasd");
   // Create consumers and then producers. Pass the *value* of i
   // as parametre of the main procedure (main_consumer or main_producer).
   tasks = tasksIndex;

@@ -6,6 +6,8 @@
 #include "circular_buffer.h"
 #include "protected_buffer.h"
 
+pthread_mutex_t m;
+
 // Initialise the protected buffer structure above.
 protected_buffer_t * cond_protected_buffer_init(int length);
 

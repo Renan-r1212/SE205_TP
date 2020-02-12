@@ -92,13 +92,19 @@ void cond_protected_buffer_put(protected_buffer_t * b, void * d){
 // possible immedidately, return NULL. Otherwise, return the element.
 void * cond_protected_buffer_remove(protected_buffer_t * b){
   void * d;
-  
+
+  if(!pthread_mutex_trylock(b->mutex)){
+    d = circular_buffer_get(b->buffer);
+  }
+  else{
+    d = NULL;
+  }
+  print_task_activity ("remove", d);
 
   // Signal or broadcast that an empty slot is available in the
   // unprotected circular buffer (if needed)
-
-  d = circular_buffer_get(b->buffer);
-  print_task_activity ("remove", d);
+  pthread_cond_broadcast(b->conditionEmpty);
+  pthread_mutex_unlock(b->mutex); 
   
   return d;
 }
@@ -109,15 +115,25 @@ int cond_protected_buffer_add(protected_buffer_t * b, void * d){
   int done;
   
   // Enter mutual exclusion
+ 
+  if(!pthread_mutex_trylock(b->mutex)){
+    done = circular_buffer_put(b->buffer, d);
+    if (!done) d = NULL;
+  }else{
+    done = 0;
+    d = NULL;
+  }
   
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
 
-  done = circular_buffer_put(b->buffer, d);
-  if (!done) d = NULL;
+  pthread_cond_broadcast(b->conditionNotEmpty);
+  
   print_task_activity ("add", d);
 
   // Leave mutual exclusion
+  pthread_mutex_unlock(b->mutex); 
+
   return done;
 }
 
@@ -155,6 +171,7 @@ int cond_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespe
   int done = 0;
   
   // Enter mutual exclusion
+  
   
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed) but waits no longer than

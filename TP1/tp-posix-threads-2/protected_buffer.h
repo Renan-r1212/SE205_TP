@@ -11,7 +11,7 @@ typedef struct {
   circular_buffer_t * buffer;
   pthread_mutex_t   * mutex;
   pthread_cond_t    * conditionEmpty;
-  pthread_cond_t    * conditionNotEmpty;
+  pthread_cond_t    * conditionFull;
 
 } protected_buffer_t;
 

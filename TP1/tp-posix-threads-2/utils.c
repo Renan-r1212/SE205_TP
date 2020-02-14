@@ -23,6 +23,7 @@ struct timespec start_time;
 pthread_mutex_t resync_mutex;
 pthread_cond_t  resync_condvar;
 
+
 void init_utils(){
   pthread_key_create(&task_info_key, NULL);
   pthread_mutex_init (&resync_mutex, NULL);
@@ -94,6 +95,20 @@ void delay_until(struct timespec * deadline) {
   struct timeval  tv_now;
   struct timespec ts_now;
   struct timespec ts_sleep;
+  pthread_mutex_t delayMutex; 
+  pthread_cond_t  delayCond;
+
+  if(pthread_mutex_init(&delayMutex,NULL) != 0){
+  perror("pthread_cond_init: delayMutex");
+  exit(1);
+  }
+
+  if(pthread_cond_init(&delayCond, NULL)){
+    perror("pthread_cond_init: delayCond");
+    exit(1);    
+  }
+  
+  pthread_mutex_lock(&delayMutex); 
 
   gettimeofday(&tv_now, NULL);
   TIMEVAL_TO_TIMESPEC(&tv_now, &ts_now);
@@ -105,7 +120,10 @@ void delay_until(struct timespec * deadline) {
   }
   if (ts_sleep.tv_sec < 0) return;
   
-  nanosleep (&ts_sleep, NULL);
+  while(pthread_cond_timedwait(&delayCond,&delayMutex,&ts_sleep) != ETIMEDOUT);
+
+  pthread_mutex_unlock(&delayMutex); 
+ // nanosleep (&ts_sleep, NULL);
 }
 
 // Compute time elapsed from start time

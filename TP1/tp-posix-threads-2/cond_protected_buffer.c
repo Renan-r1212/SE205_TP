@@ -14,7 +14,7 @@ protected_buffer_t * cond_protected_buffer_init(int length) {
   // Initialize the synchronization components
 
   // pthread_mutex_init returns 0 if the orperation went well
-   b->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+  b->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
   if(pthread_mutex_init(b->mutex,NULL) != 0){
     perror("pthread_cond_init:");
     exit(1);

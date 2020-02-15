@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "array": "c",
+        "hash_map": "c",
+        "string_view": "c",
+        "type_traits": "c"
     }
 }

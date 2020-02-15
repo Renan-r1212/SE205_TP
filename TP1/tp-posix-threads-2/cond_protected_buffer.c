@@ -16,20 +16,23 @@ protected_buffer_t * cond_protected_buffer_init(int length) {
   // pthread_mutex_init returns 0 if the orperation went well
   b->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
   if(pthread_mutex_init(b->mutex,NULL) != 0){
+    pthread_mutex_destroy(b->mutex);
     perror("pthread_cond_init:");
     exit(1);
   }
  
   b->conditionEmpty = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
   if(pthread_cond_init(b->conditionEmpty, NULL)){
+    pthread_cond_destroy(b->conditionEmpty); 
     perror("pthread_cond_init:");
     exit(1);    
   }
 
     b->conditionFull = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
     if(pthread_cond_init(b->conditionFull, NULL)){
-    perror("pthread_cond_init:");
-    exit(1);    
+      pthread_cond_destroy(b->conditionFull);   
+      perror("pthread_cond_init:");
+      exit(1);    
   }
   return b;
 }
@@ -82,7 +85,7 @@ void cond_protected_buffer_put(protected_buffer_t * b, void * d){
   
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
-    if (b->buffer->size == b->buffer->max_size) {
+  if (b->buffer->size == b->buffer->max_size) {
     pthread_cond_broadcast(b->conditionEmpty);
   }
   print_task_activity ("put", d);

@@ -92,21 +92,17 @@ void add_millis_to_timespec (struct timespec * ts, long msec) {
 // Delay until an absolute time. Translate the absolute time into a
 // relative one and use nanosleep. This is incorrect (we fix that).
 void delay_until(struct timespec * deadline) {
-  struct timeval  tv_now;
-  struct timespec ts_now;
-  struct timespec ts_sleep;
   pthread_mutex_t delayMutex; 
 
-  if(pthread_mutex_init(&delayMutex,NULL) != 0){
+  if(pthread_mutex_init(&delayMutex, NULL) != 0){
     perror("pthread_cond_init: delayMutex");
     exit(1);
   }
   
   pthread_mutex_lock(&delayMutex); 
-  while(pthread_mutex_timedlock(&delayMutex,deadline) != ETIMEDOUT);
+  while(pthread_mutex_timedlock(&delayMutex, deadline) != ETIMEDOUT);
 
   pthread_mutex_unlock(&delayMutex); 
- // nanosleep (&ts_sleep, NULL);
 }
 
 // Compute time elapsed from start time

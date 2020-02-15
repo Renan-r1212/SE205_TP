@@ -113,13 +113,13 @@ void * sem_protected_buffer_remove(protected_buffer_t * b){
   }
 
   // Enter mutual exclusion.
-  pthread_mutex_lock(b->mutex); 
+  pthread_mutex_lock(b->semMutex); 
   
   d = circular_buffer_get(b->buffer);
   print_task_activity ("remove", d);
 
   // Leave mutual exclusion.
-  pthread_mutex_unlock(b->mutex); 
+  pthread_mutex_unlock(b->semMutex); 
 
   // Enforce synchronisation semantics using semaphores.
   if (b->buffer->size == 0) {
@@ -142,13 +142,13 @@ int sem_protected_buffer_add(protected_buffer_t * b, void * d){
   }
 
   // Enter mutual exclusion.
-  pthread_mutex_lock(b->mutex);
+  pthread_mutex_lock(b->semMutex);
   
   circular_buffer_put(b->buffer, d);
   print_task_activity ("add", d);
   
   // Leave mutual exclusion.
-  pthread_mutex_unlock(b->mutex); 
+  pthread_mutex_unlock(b->semMutex); 
 
   // Enforce synchronisation semantics using semaphores.
   if(b->buffer->size == b->buffer->max_size){
@@ -175,13 +175,13 @@ void * sem_protected_buffer_poll(protected_buffer_t * b, struct timespec *abstim
   }
 
   // Enter mutual exclusion. 
-  pthread_mutex_lock(b->mutex);
+  pthread_mutex_lock(b->semMutex);
   
   d = circular_buffer_get(b->buffer);
   print_task_activity ("poll", d);
 
   // Leave mutual exclusion.
-  pthread_mutex_unlock(b->mutex);
+  pthread_mutex_unlock(b->semMutex);
 
   // Enforce synchronisation semantics using semaphores.
   if (b->buffer->size == 0) {
@@ -206,13 +206,13 @@ int sem_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec
   }
 
   // Enter mutual exclusion.
-  pthread_mutex_lock(b->mutex);
+  pthread_mutex_lock(b->semMutex);
   
   circular_buffer_put(b->buffer, d);
   print_task_activity ("offer", d);
 
   // Leave mutual exclusion.
-  pthread_mutex_unlock(b->mutex);
+  pthread_mutex_unlock(b->semMutex);
 
   // Enforce synchronisation semantics using semaphores.
   if(b->buffer->size == b->buffer->max_size){

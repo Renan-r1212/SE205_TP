@@ -96,31 +96,14 @@ void delay_until(struct timespec * deadline) {
   struct timespec ts_now;
   struct timespec ts_sleep;
   pthread_mutex_t delayMutex; 
-  pthread_cond_t  delayCond;
 
   if(pthread_mutex_init(&delayMutex,NULL) != 0){
-  perror("pthread_cond_init: delayMutex");
-  exit(1);
-  }
-
-  if(pthread_cond_init(&delayCond, NULL)){
-    perror("pthread_cond_init: delayCond");
-    exit(1);    
+    perror("pthread_cond_init: delayMutex");
+    exit(1);
   }
   
   pthread_mutex_lock(&delayMutex); 
-
-  gettimeofday(&tv_now, NULL);
-  TIMEVAL_TO_TIMESPEC(&tv_now, &ts_now);
-  ts_sleep.tv_nsec = deadline->tv_nsec - ts_now.tv_nsec;
-  ts_sleep.tv_sec = deadline->tv_sec - ts_now.tv_sec;
-  if (ts_sleep.tv_nsec < 0) {
-    ts_sleep.tv_nsec = 1E9 + ts_sleep.tv_nsec;
-    ts_sleep.tv_sec--;
-  }
-  if (ts_sleep.tv_sec < 0) return;
-  
-  while(pthread_cond_timedwait(&delayCond,&delayMutex,&ts_sleep) != ETIMEDOUT);
+  while(pthread_mutex_timedlock(&delayMutex,deadline) != ETIMEDOUT);
 
   pthread_mutex_unlock(&delayMutex); 
  // nanosleep (&ts_sleep, NULL);

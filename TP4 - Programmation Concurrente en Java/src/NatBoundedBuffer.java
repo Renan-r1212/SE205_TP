@@ -15,32 +15,47 @@ class NatBoundedBuffer extends BoundedBuffer {
         Object value;
 
         // Enter mutual exclusion
-            
+        synchronized (this){
             // Wait until there is a full slot available.
+            while(size == 0){
+                try{
+                    wait();
+                }catch(Exception e){}
+            }
 
             // Signal or broadcast that an empty slot is available (if needed)
+            if(size == maxSize)
+                notifyAll();
 
             value = super.get();
 
             // Leave mutual exclusion and enforce synchronisation semantics
             // using semaphores.
-        return value;
+            return value;
+        }
     }
 
     // Insert an element into buffer. If the attempted operation is
     // not possible immedidately, the method call blocks until it is.
     boolean put(Object value) {
         // Enter mutual exclusion
-            
+        synchronized (this){
             // Wait until there is a empty slot available.
-
+            while(size == maxSize){
+                try{
+                    wait();
+                }catch(Exception e){}
+            }
             // Signal or broadcast that a full slot is available (if needed)
+            if(size == 0)
+                notifyAll();
 
             super.put(value);
 
             // Leave mutual exclusion and enforce synchronisation semantics
             // using semaphores.
-        return true;
+            return true;
+        }
     }
 
     // Extract an element from buffer. If the attempted operation is not

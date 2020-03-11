@@ -3,7 +3,7 @@ import java.lang.InterruptedException;
 import java.util.concurrent.TimeUnit;
 
 class SemBoundedBuffer extends BoundedBuffer {
-    Semaphore emptySlots, fullSlots;
+    Semaphore emptySlots, fullSlots, mutexSem;
 
     // Initialise the protected buffer structure above. 
     SemBoundedBuffer (int maxSize) {
@@ -18,24 +18,38 @@ class SemBoundedBuffer extends BoundedBuffer {
 
         // Enter mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-            value = super.get();
+        try{
+        emptySlots.acquire();
+        }catch(Exception e){}
 
+        synchronized (this){
+            value = super.get();
+        }
         // Leave mutual exclusion and enforce synchronisation semantics
         // using semaphores.
+
+        fullSlots.release();
+
         return value;
     }
 
     // Insert an element into buffer. If the attempted operation is
     // not possible immedidately, the method call blocks until it is.
     boolean put(Object value) {
-        boolean done;
+        boolean done = false;
 
         // Enter mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-            done = super.put(value);
+        try{
+        fullSlots.acquire();
+        }catch(Exception e){}
 
-            // Leave mutual exclusion and enforce synchronisation semantics
-            // using semaphores.
+        synchronized (this){
+            done = super.put(value);
+        }
+        // Leave mutual exclusion and enforce synchronisation semantics
+        // using semaphores.
+        emptySlots.release();
         return done;
     }
 
@@ -43,29 +57,51 @@ class SemBoundedBuffer extends BoundedBuffer {
     // possible immedidately, return NULL. Otherwise, return the element.
     Object remove() {
         boolean done;
-        Object value = false;
-
+        Object value;
+        
         // Enter mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-            value = super.get();
+        try{
+            if(!emptySlots.tryAcquire()){;    
+                return null;
+            }
+        }catch(Exception e){}        
 
+        synchronized (this){
+            if(size == maxSize)
+                value = super.get();
+            else
+                value = null;            
+        }
         // Leave mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-       return value;
+        fullSlots.release();
+        
+        return value;
     }
 
     // Insert an element into buffer. If the attempted operation is
     // not possible immedidately, return 0. Otherwise, return 1.
     boolean add(Object value) {
-        boolean done;
+        boolean done = false;
 
         // Enter mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-            super.put(value);
-
+        try{
+            if(!fullSlots.tryAcquire()){
+                return done;
+            }
+        }catch(Exception e){}
+        
+        synchronized (this){
+            if(size == 0)
+                done = super.put(value);
+        }
         // Leave mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-        return true;
+        emptySlots.release();
+
+        return done;
     }
 
     
@@ -79,12 +115,27 @@ class SemBoundedBuffer extends BoundedBuffer {
         boolean done = false;
         boolean interrupted = true;
 
+        timeout = deadline - System.currentTimeMillis();
         // Enter mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-            value = super.get();
 
+        try{
+            if(!emptySlots.tryAcquire(timeout, TimeUnit.MILLISECONDS)){
+                return null;
+            }
+
+        }catch(Exception e){}
+
+        synchronized (this){
+            if(size == maxSize)
+                value = super.get();
+            else
+                value = null;
+        }
         // Leave mutual exclusion and enforce synchronisation semantics
         // using semaphores.
+        fullSlots.release();
+
         return value;
     }
 
@@ -97,9 +148,25 @@ class SemBoundedBuffer extends BoundedBuffer {
         boolean done = false;
         boolean interrupted = true;
 
+        timeout = deadline - System.currentTimeMillis();
+
         // Enter mutual exclusion and enforce synchronisation semantics
         // using semaphores.
-            done = super.put(value);
+
+
+        try{
+            if(!fullSlots.tryAcquire(timeout, TimeUnit.MILLISECONDS)){
+                return done;
+            }
+        }catch(Exception e){}
+
+        synchronized (this){
+            if(size == 0)
+                done = super.put(value);
+        }
+
+        emptySlots.release();
+        
         return done;
     }
 }

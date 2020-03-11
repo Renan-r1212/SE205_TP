@@ -31,8 +31,8 @@ class NatBoundedBuffer extends BoundedBuffer {
 
             // Leave mutual exclusion and enforce synchronisation semantics
             // using semaphores.
-            return value;
         }
+        return value;
     }
 
     // Insert an element into buffer. If the attempted operation is
@@ -54,22 +54,29 @@ class NatBoundedBuffer extends BoundedBuffer {
 
             // Leave mutual exclusion and enforce synchronisation semantics
             // using semaphores.
-            return true;
         }
+        return true;
     }
+
 
     // Extract an element from buffer. If the attempted operation is not
     // possible immedidately, return NULL. Otherwise, return the element.
     Object remove() {
         Object value = null;
-
+       
         // Enter mutual exclusion
+        synchronized (this){
+        
+            if(size == 0){
+                return value;
+            }        
             
             // Signal or broadcast that an empty slot is available (if needed)
 
             value=super.get();
 
-            // Leave mutual exclusion
+            // Leave mutual exclusion           
+        }
         return value;
     }
 
@@ -79,12 +86,18 @@ class NatBoundedBuffer extends BoundedBuffer {
         boolean done;
 
         // Enter mutual exclusion
+        synchronized (this){    
             
-            // Signal or broadcast that a full slot is available (if needed)
+            if(size == maxSize){
+                return false;
+            } 
 
+            // Signal or broadcast that a full slot is available (if needed)
+            
             done=super.put(value);
 
-            // Leave mutual exclusion
+            // Leave mutual exclusion   
+        }
         return done;
     }
 
@@ -100,17 +113,30 @@ class NatBoundedBuffer extends BoundedBuffer {
         boolean interrupted = true;
 
         // Enter mutual exclusion
+        synchronized (this){
 
             // Wait until a full slot is available but wait
             // no longer than the given deadline
-    
+            while(size == 0){
+                try{
+                    wait(deadline - System.currentTimeMillis());
+                    break;
+                }catch(Exception e){}
+            }
+
+            if(size == maxSize) 
+                done = true;
+
             if (!done) return null;
 
             // Signal or broadcast that an full slot is available (if needed)
+            if(size == 0)
+                notifyAll();
 
             value = super.get();
 
-            // Leave mutual exclusion 
+            // Leave mutual exclusion
+        } 
         return value;
     }
 
@@ -125,18 +151,31 @@ class NatBoundedBuffer extends BoundedBuffer {
         long    now;
 
         // Enter mutual exclusion
+        synchronized (this){
 
             // Wait until a empty slot is available but wait
             // no longer than the given deadline
-    
+            while(size == maxSize){
+                try{
+                    wait(deadline - System.currentTimeMillis());
+                    break;
+                }catch(Exception e){}
+            }
+
+            if(size == 0)
+                done = true;
+
             if (!done) return false;
 
             // Signal or broadcast that an empty slot is available (if needed)
+            if(size == maxSize)
+                notifyAll();
 
             super.put(value);
 
             // Leave mutual exclusion and enforce synchronisation semantics
-            // using semaphores.
+            // using semaphores.          
+        }
         return true;
     }
 }

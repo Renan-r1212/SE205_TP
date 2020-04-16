@@ -67,6 +67,19 @@ int pool_thread_remove (thread_pool_t * thread_pool) {
 
   // Protect against concurrent accesses and check whether the thread
   // can be deallocated.
+  pthread_mutex_lock(&(thread_pool->mutex));
+
+  if (thread_pool->shutdown)
+    thread_pool->size--;
+
+  if (thread_pool->size > thread_pool->core_pool_size)
+    thread_pool->size--;
+
+  if (thread_pool->size==0)
+    pthread_cond_broadcast(&(thread_pool->pool_cond));
+
+  pthread_mutex_unlock(&(thread_pool->pool_mutex));
+
   if (done)
     printf("%06ld [pool_thread] terminated\n", relative_clock());
   return done;

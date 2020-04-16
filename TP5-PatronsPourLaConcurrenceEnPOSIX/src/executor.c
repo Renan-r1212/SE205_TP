@@ -40,7 +40,67 @@ future_t * submit_callable (executor_t * executor, callable_t * callable) {
 
   // Future must include synchronisation objects to block threads
   // until the result of the callable computation becames available.
+  future_t * submit_callable (executor_t * executor, callable_t * callable) {
+  future_t * future = (future_t *) malloc (sizeof(future_t));
 
+  callable->executor = executor;
+  future->callable  = callable;
+  future->completed = 0;
+
+  // Future must include synchronisation objects to block threads
+  // until the result of the callable computation becames available.
+  if(pthread_mutex_init(&future->mutex,NULL) != 0){
+    pthread_mutex_destroy(&future->mutex);
+    perror("pthread_mutex_init:");
+    exit(1);
+  }
+
+  if(pthread_cond_init(&(future->cond),NULL) != 0){
+    pthread_cond_destroy(&future->cond);
+    perror("pthread_cond_init:");
+    exit(1);
+  }
+
+  // Try to create a thread, but do not force to exceed core_pool_size
+  // (last parameter set to false).
+  if (pool_thread_create (executor->thread_pool, main_pool_thread, future, 0))
+    return future;
+  
+  // When there are already enough created threads, queue the callable
+  // in the blocking queue.
+
+  // When the queue is full, pop the first future from the queue and
+  // push the current one.
+  future_t * first = protected_buffer_remove(executor->futures);
+  if (first != NULL) {
+    protected_buffer_add(executor->futures, future);
+    future = first;
+  }
+  
+  // Try to create a thread, but allow to exceed core_pool_size (last
+  // parameter set to true).
+  return NULL;
+}
+
+// Get result from callable execution. Block if not available.
+void * get_callable_result (future_t * future) {
+  void * result;
+
+  // Protect against concurrent accesses. Block until the callable has
+  // completed.
+  pthread_mutex_lock(&(future->mutex));
+
+  while(future->completed == 0) 
+    pthread_cond_wait(&(future->cond),&(future->mutex));  
+
+  result = (void *) future->result;
+  
+  // Unprotect against concurrent accesses
+  pthread_mutex_unlock(&(future->mutex));
+
+  // Do not bother to deallocate future
+  return result;
+}
   // Try to create a thread, but do not force to exceed core_pool_size
   // (last parameter set to false).
   if (pool_thread_create (executor->thread_pool, main_pool_thread, future, 0))

@@ -20,6 +20,12 @@ thread_pool_t * thread_pool_init(int core_pool_size, int max_pool_size) {
     perror("pthread_cond_init:");
     exit(1);
   }
+
+    if(pthread_cond_init(&thread_pool->cond,NULL) != 0){
+    pthread_cond_destroy(&thread_pool->cond);
+    perror("pthread_cond_init:");
+    exit(1);
+  }
   
   return thread_pool;
 }
@@ -76,9 +82,9 @@ int pool_thread_remove (thread_pool_t * thread_pool) {
     thread_pool->size--;
 
   if (thread_pool->size==0)
-    pthread_cond_broadcast(&(thread_pool->pool_cond));
+    pthread_cond_broadcast(&(thread_pool->cond));
 
-  pthread_mutex_unlock(&(thread_pool->pool_mutex));
+  pthread_mutex_unlock(&(thread_pool->mutex));
 
   if (done)
     printf("%06ld [pool_thread] terminated\n", relative_clock());
@@ -88,6 +94,12 @@ int pool_thread_remove (thread_pool_t * thread_pool) {
 // Wait until thread number equals zero. Protect the thread pool
 // structure against concurrent accesses.
 void wait_thread_pool_empty (thread_pool_t * thread_pool) {
+  pthread_mutex_lock(&(thread_pool->mutex));
+
+  while(thread_pool->size != 0)
+    pthread_cond_wait(&(thread_pool->cond), &(thread_pool->mutex));
+
+  pthread_mutex_unlock(&(thread_pool->mutex));
 }  
 
 int get_shutdown(thread_pool_t * thread_pool) {

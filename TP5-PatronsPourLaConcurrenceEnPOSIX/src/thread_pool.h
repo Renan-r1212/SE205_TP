@@ -13,7 +13,7 @@ typedef struct {
   int               size;
   int               shutdown;
   pthread_mutex_t   mutex;  
-
+  pthread_cond_t    cond;
 } thread_pool_t;
 
 // Create a thread pool. This pool must be protected against

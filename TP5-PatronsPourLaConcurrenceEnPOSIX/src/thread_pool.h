@@ -12,8 +12,7 @@ typedef struct {
   int               max_pool_size;
   int               size;
   int               shutdown;
-  
-  pthread_mutex_t   mutex;
+  pthread_mutex_t   mutex;  
 
 } thread_pool_t;
 

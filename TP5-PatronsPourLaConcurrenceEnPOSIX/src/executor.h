@@ -21,9 +21,6 @@ typedef struct {
   int             completed;
   callable_t    * callable;
   void          * result;
-
-  pthread_cond_t    condF;
-  pthread_mutex_t   mutexF;
 } future_t;
 
 typedef struct _executor_t {

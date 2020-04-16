@@ -14,13 +14,13 @@ thread_pool_t * thread_pool_init(int core_pool_size, int max_pool_size) {
   thread_pool->max_pool_size  = max_pool_size;
   thread_pool->size           = 0;
 
-  // Mutex initialization
+    // Mutex initialization
   if(pthread_mutex_init(&thread_pool->mutex,NULL) != 0){
     pthread_mutex_destroy(&thread_pool->mutex);
     perror("pthread_cond_init:");
     exit(1);
   }
-
+  
   return thread_pool;
 }
 

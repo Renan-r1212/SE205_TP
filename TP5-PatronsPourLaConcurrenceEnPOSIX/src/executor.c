@@ -72,7 +72,7 @@ future_t * submit_callable (executor_t * executor, callable_t * callable) {
   
   // Try to create a thread, but allow to exceed core_pool_size (last
   // parameter set to true).
-  pool_thread_create (executor->thread_pool, main_pool_thread, future, 0);
+  pool_thread_create (executor->thread_pool, main_pool_thread, future, 1);
   
   return future;
 }

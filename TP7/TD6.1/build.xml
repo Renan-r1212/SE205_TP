@@ -1,0 +1,44 @@
+<project>
+  <property name="akka.dir"     value="/cal/homes/brandner/opt/akka-2.3.14/lib/" />
+
+  <path id="classpath" >
+    <fileset dir="${akka.dir}/" includes="**/*.jar" />
+  </path>
+
+  <target name="clean" >
+      <delete dir="build" />
+  </target>
+
+  <target name="compile" >
+    <mkdir dir="build/classes" />
+    <javac srcdir="src" destdir="build/classes" classpathref="classpath" includeantruntime="false" />
+  </target>
+
+  <target name="jar" depends="compile" >
+    <mkdir dir="build/jar" />
+    <jar destfile="build/jar/se205.jar" basedir="build/classes" >
+        <manifest>
+            <attribute name="Main-Class" value="se205.td6_1.HelloWorld" />
+        </manifest>
+    </jar>
+  </target>
+
+  <target name="run-hello" depends="jar" >
+    <java fork="true" classname="se205.td6_1.Main" >
+      <classpath>
+        <path refid="classpath"/>
+        <path location="build/jar/se205.jar"/>
+      </classpath>
+    </java>
+  </target>
+
+  <target name="run-bf" depends="jar" >
+    <java fork="true" classname="se205.td6_2.Main" >
+      <classpath>
+        <path refid="classpath"/>
+        <path location="build/jar/se205.jar"/>
+      </classpath>
+      <arg value="data/simple.graph"/>
+    </java>
+  </target>
+</project>
